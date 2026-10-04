@@ -1,0 +1,1809 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فرم تخصصی بازدید آموزشی - ناحیه سه شیراز</title>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Jalali Moment for Persian Date -->
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jalali-moment@3.3.10/dist/jalali-moment.browser.js"></script>
+  <!-- Chart.js for dashboard charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- Vazir Font from CDN -->
+  <link href="https://v1.fontapi.ir/css/Vazir:300,400,500" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #6b7280, #1e3a8a);
+      min-height: 100vh;
+      font-family: 'Vazir', sans-serif;
+      font-size: 0.85rem;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background: linear-gradient(135deg, #1f2937, #111827);
+      color: #e5e7eb;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      transition: transform 0.3s, background-color 0.3s;
+    }
+    .card.dark-mode {
+      background: #374151;
+      color: #e5e7eb;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .gradient-btn {
+      background: linear-gradient(90deg, #2563eb, #7c3aed);
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .gradient-btn:hover {
+      background: linear-gradient(90deg, #1e40af, #6d28d9);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+    .gradient-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s ease, height 0.6s ease;
+    }
+    .gradient-btn:hover::before {
+      width: 200px;
+      height: 200px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 0.5rem;
+      text-align: right;
+      font-size: 0.8rem;
+    }
+    th {
+      background: #dbeafe;
+      color: #1e40af;
+      font-weight: 600;
+    }
+    .dark-mode th {
+      background: #4b5e8e;
+      color: #e5e7eb;
+    }
+    textarea, input[type="number"], input[type="text"], input[type="date"], select {
+      width: 100%;
+      font-size: 0.8rem;
+      padding: 0.5rem;
+      border: 1px solid #3b82f6;
+      border-radius: 0.5rem;
+      transition: border-color 0.3s;
+      background: white;
+      color: #1f2937;
+    }
+    .dark-mode textarea, .dark-mode input, .dark-mode select {
+      background: #4b5563;
+      color: #e5e7eb;
+      border-color: #6b7280;
+    }
+    textarea:focus, input:focus, select:focus {
+      border-color: #1e40af;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    textarea {
+      resize: vertical;
+    }
+    .average {
+      font-weight: bold;
+      color: #1e40af;
+    }
+    .dark-mode .average {
+      color: #93c5fd;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #fff;
+      margin-top: 2rem;
+      opacity: 0.9;
+    }
+    .dark-mode .footer {
+      color: #d1d5db;
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #1f2937;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      right: 50%;
+      transform: translateX(50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    .search-container {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    #chartContainer {
+      max-width: 600px;
+      margin: 2rem auto;
+    }
+    .header {
+      text-align: center;
+      color: #fff;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .header small {
+      display: block;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 640px) {
+      .container {
+        padding: 0.75rem;
+      }
+      .card {
+        padding: 1rem;
+        border-radius: 0.75rem;
+      }
+      th, td {
+        padding: 0.3rem;
+        font-size: 0.7rem;
+      }
+      input, textarea, select {
+        font-size: 0.75rem;
+        padding: 0.4rem;
+      }
+      .gradient-btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+      }
+      .button-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 0.75rem;
+        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+      }
+      .dark-mode .button-container {
+        background: #1f2937;
+      }
+      .grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+      .search-container {
+        flex-direction: column;
+      }
+      .header {
+        font-size: 1rem;
+      }
+      .header small {
+        font-size: 0.7rem;
+      }
+    }
+  
+/* ===== Modern MG UI Layer — visual/function extension only ===== */
+:root{--mg-p1:#6d28d9;--mg-p2:#ec4899;--mg-p3:#06b6d4;--mg-ink:#172033;--mg-paper:#f7f1e5;--mg-card:rgba(255,255,255,.88);--mg-shadow:8px 8px 22px rgba(52,38,85,.16),-5px -5px 15px rgba(255,255,255,.9)}
+*{box-sizing:border-box} body{background:radial-gradient(circle at 10% 10%,#fff1f7 0,#eef4ff 32%,#e8e5ff 62%,#dffaff 100%)!important;color:var(--mg-ink)}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;background-image:linear-gradient(90deg,rgba(120,85,40,.05) 1px,transparent 1px),linear-gradient(rgba(120,85,40,.04) 1px,transparent 1px);background-size:7px 7px;z-index:-1}
+.header{padding:18px 12px 12px!important;font-weight:800;text-shadow:0 2px 12px rgba(0,0,0,.2)} .header small{opacity:.95}
+.card{background:var(--mg-card)!important;border:1px solid rgba(255,255,255,.72)!important;box-shadow:var(--mg-shadow)!important;border-radius:22px!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);overflow:hidden}
+.card:hover{transform:none!important}.mg-control-deck{margin:0 0 18px;padding:16px;border-radius:22px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(245,241,255,.84));box-shadow:var(--mg-shadow);border:1px solid rgba(255,255,255,.9)}
+.mg-deck-title,.mg-section-title{display:flex;align-items:center;gap:10px}.mg-deck-title>span,.mg-section-title>span{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,var(--mg-p1),var(--mg-p2));color:#fff;font-size:20px;box-shadow:0 7px 18px rgba(109,40,217,.28)}
+.mg-deck-title small,.mg-section-title small{display:block;color:#6b7280;font-size:10px;margin-top:3px}.mg-deck-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.mg-btn{border:0;border-radius:13px;padding:9px 13px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#475569,#334155);font-size:11px;font-weight:700;box-shadow:0 6px 14px rgba(15,23,42,.15);transition:.2s;position:relative;overflow:hidden}.mg-btn:hover{transform:translateY(-2px);box-shadow:0 9px 18px rgba(15,23,42,.22)}.mg-primary{background:linear-gradient(135deg,#7c3aed,#ec4899)}.mg-success{background:linear-gradient(135deg,#059669,#10b981)}.mg-info{background:linear-gradient(135deg,#0284c7,#06b6d4)}.mg-warm{background:linear-gradient(135deg,#d97706,#f59e0b)}.mg-dark{background:linear-gradient(135deg,#334155,#111827)}.mg-file{display:inline-flex;align-items:center}.mg-file input{display:none}.mg-live{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:10px;color:#64748b}.mg-live i{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 5px rgba(16,185,129,.13)}.mg-live.saving i{background:#f59e0b}.mg-live #lastSavedText{margin-right:auto}
+.mg-layout{display:grid;grid-template-columns:minmax(230px,28%) minmax(0,1fr);gap:16px;align-items:start}.mg-main-column{min-width:0}.mg-records{position:sticky;top:10px;padding:12px!important}.mg-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.mg-panel-head small{display:block;color:#64748b;font-size:9px;margin-top:3px}.mg-panel-head>span{min-width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#ede9fe;color:#6d28d9;font-weight:800}.mg-record-table-wrap{overflow:auto;max-height:72vh}.mg-record-table{font-size:9px!important;min-width:510px}.mg-record-table th{position:sticky;top:0;z-index:2}.mg-record-table td,.mg-record-table th{padding:6px 5px!important;white-space:nowrap}.mg-record-row{cursor:pointer}.mg-record-row:hover{background:#f5f3ff}.mg-status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:4px;vertical-align:middle}.mg-status-dot.green{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.12)}.mg-status-dot.yellow{background:#eab308;box-shadow:0 0 0 4px rgba(234,179,8,.12)}.mg-status-dot.orange{background:#f97316;box-shadow:0 0 0 4px rgba(249,115,22,.12)}.mg-status-dot.red{background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.12)}.mg-status-dot.gray{background:#94a3b8}
+.mg-main-column>.card{margin-bottom:14px}.mg-main-column table{box-shadow:inset 0 0 0 1px rgba(109,40,217,.05)}.mg-main-column th{background:linear-gradient(135deg,#ede9fe,#fce7f3)!important;color:#4c1d95!important;border-color:#ddd6fe!important}.mg-main-column td{border-color:#e5e7eb!important}.mg-main-column input,.mg-main-column textarea,.mg-main-column select{border-color:#d8ccf7!important;background:rgba(255,255,255,.8)!important;box-shadow:inset 2px 2px 7px rgba(88,64,145,.07),0 1px 0 #fff}.mg-main-column textarea{min-height:58px;line-height:1.8}.mg-main-column textarea:focus,.mg-main-column input:focus,.mg-main-column select:focus{border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(167,139,250,.18)!important}
+.mg-axis-tools{display:flex;gap:6px;align-items:center;float:left;margin-top:-4px}.mg-axis-toggle{border:0;border-radius:9px;padding:5px 8px;background:#ede9fe;color:#5b21b6;font-size:9px;cursor:pointer}.mg-axis-body.collapsed{display:none}.mg-indicator-control{display:flex;align-items:flex-start;gap:7px}.mg-indicator-control input{width:15px!important;height:15px!important;margin-top:2px;accent-color:#7c3aed}.mg-indicator-control label{cursor:pointer;flex:1}.mg-score-cell{min-width:75px}.mg-score-cell .score{font-weight:800}.mg-note-label{font-size:8px;color:#64748b;display:block;margin-top:4px}.mg-row-off{opacity:.45}.mg-row-off td:nth-child(4){filter:grayscale(1)}
+.score.score-green{background:#dcfce7!important;border-color:#22c55e!important;color:#166534!important}.score.score-yellow{background:#fef9c3!important;border-color:#eab308!important;color:#854d0e!important}.score.score-orange{background:#ffedd5!important;border-color:#f97316!important;color:#9a3412!important}.score.score-red{background:#fee2e2!important;border-color:#ef4444!important;color:#991b1b!important}
+.mg-analysis-card{margin-top:16px}.mg-analysis-card h2,.mg-sign-card h2{font-size:15px;margin:0}.mg-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:15px 0}.mg-metric{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:14px;background:#faf7ff;box-shadow:inset 2px 2px 7px rgba(79,50,130,.07)}.mg-metric span{font-size:10px}.mg-metric strong{font-size:13px}.mg-progress{height:9px;border-radius:20px;background:#e5e7eb;overflow:hidden;margin-top:6px}.mg-progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e);transition:width .35s}.mg-radar-wrap{max-width:620px;margin:10px auto}.mg-radar-wrap canvas{max-height:430px}.mg-radar-label{text-align:center;color:#64748b;font-size:10px;margin-top:7px}.mg-smart-table td,.mg-smart-table th{font-size:9px!important;line-height:1.8}.mg-smart-table th{background:linear-gradient(135deg,#e0f2fe,#ede9fe)!important}.mg-sign-card{margin-top:16px}.mg-sign-card canvas{width:100%;height:220px;margin-top:12px;border-radius:16px;background:#fbf7ed;border:2px dashed #b9a98d;touch-action:none;cursor:crosshair;box-shadow:inset 0 0 28px rgba(121,85,35,.08)}.mg-sign-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:9px;color:#64748b}.mg-sign-actions button{font-size:9px}
+@media(max-width:900px){.mg-layout{grid-template-columns:1fr}.mg-records{position:relative;top:auto}.mg-record-table-wrap{max-height:280px}.mg-analysis-grid{grid-template-columns:1fr}.mg-deck-actions .mg-btn{flex:1 1 30%}}@media(max-width:640px){.container{padding:.55rem!important}.card{padding:.8rem!important;border-radius:17px!important}.mg-control-deck{padding:11px}.mg-deck-actions .mg-btn{font-size:9px;padding:8px 7px;flex:1 1 46%}.mg-layout{gap:9px}.mg-main-column th,.mg-main-column td{font-size:8px!important;padding:5px 3px!important}.mg-main-column textarea{min-height:72px}.mg-sign-card canvas{height:190px}.mg-smart-table{min-width:650px}.mg-radar-wrap{overflow:hidden}}
+@media print{body{background:#fff!important}.mg-control-deck,.mg-records,#dashboard,#toggleDarkMode,.button-container{display:none!important}.card{box-shadow:none!important;background:#fff!important;border:1px solid #aaa!important;page-break-inside:avoid}.mg-sign-card canvas{background:#fff!important}.mg-main-column>.card{margin-bottom:8px}.mg-main-column textarea{min-height:auto}.mg-smart-table{font-size:8px!important}}
+#radarChartTop{max-height:360px;margin-top:5px} .mg-print-bw *{color:#000!important;background:#fff!important;box-shadow:none!important;border-color:#000!important} .mg-print-bw .score{filter:grayscale(1)}
+</style>
+</head>
+<body>
+  <div class="header">
+    📚 بسم الله الرحمن الرحیم 📚
+    <small>سازنده: حسین هادی پور 🔨</small>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h1 class="text-2xl font-bold text-center text-blue-900 mb-4 dark-mode:text-blue-300">فرم تخصصی بازدید آموزشی - مقطع ابتدایی</h1>
+      <p class="text-center text-gray-600 text-sm mb-6 dark-mode:text-gray-400">اداره آموزش و پرورش ناحیه سه شیراز</p>
+
+      <!-- دکمه حالت تاریک -->
+      <div class="flex justify-end mb-4">
+        <button id="toggleDarkMode" class="gradient-btn">تغییر به حالت تاریک</button>
+      </div>
+
+      <!-- فیلتر جستجوی پیشرفته -->
+      <div class="search-container">
+        <div class="w-full">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">جستجوی فرم ذخیره‌شده</label>
+          <input id="search_form" type="text" placeholder="جستجو بر اساس نام، کد پرسنلی یا تاریخ" class="mt-1">
+        </div>
+        <div class="w-full">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">انتخاب فرم ذخیره‌شده</label>
+          <select id="load_form_select" class="mt-1 block w-full rounded-md border-gray-300">
+            <option value="">-- هیچ‌کدام --</option>
+          </select>
+        </div>
+        <button onclick="loadForm()" class="gradient-btn px-4 py-1 mt-2">بارگذاری فرم</button>
+      </div>
+
+      <div class="mg-control-deck">
+        <div class="mg-deck-title"><span>⚡</span><div><b>مرکز مدیریت فرم‌ها</b><small>ثبت لحظه‌ای، ویرایش، پشتیبان‌گیری و گزارش‌گیری</small></div></div>
+        <div class="mg-deck-actions">
+          <button type="button" id="newFormBtn" class="mg-btn mg-primary">＋ فرم جدید</button>
+          <button type="button" id="saveNowBtn" class="mg-btn mg-success">✓ ذخیره قطعی</button>
+          <button type="button" id="editSavedBtn" class="mg-btn mg-info">✎ ویرایش فرم انتخاب‌شده</button>
+          <button type="button" id="exportJsonBtn" class="mg-btn">⇩ خروجی JSON</button>
+          <label class="mg-btn mg-file">⇧ ورود JSON<input type="file" id="importJsonInput" accept=".json,application/json"></label>
+          <button type="button" id="exportExcelBtn" class="mg-btn mg-warm">▦ خروجی Excel</button>
+          <button type="button" id="printColorBtn" class="mg-btn">🖨 چاپ رنگی</button>
+          <button type="button" id="printBWBtn" class="mg-btn mg-dark">🖨 چاپ سیاه‌وسفید</button>
+        </div>
+        <div class="mg-live"><i id="liveDot"></i><span id="liveText">آماده ثبت لحظه‌ای</span><span id="lastSavedText"></span></div>
+      </div>
+
+      <div class="mg-layout">
+        <aside class="mg-records card" id="savedRecordsPanel">
+          <div class="mg-panel-head"><div><b>افراد ثبت‌شده</b><small>هر کد پرسنلی فقط یک رکورد</small></div><span id="recordCount">۰</span></div>
+          <div class="mg-record-table-wrap"><table class="mg-record-table"><thead><tr><th>وضعیت</th><th>نام</th><th>کد پرسنلی</th><th>پایه</th><th>معدل</th><th>تاریخ / ساعت</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+        </aside>
+        <div class="mg-main-column">
+      <!-- داشبورد تحلیلی -->
+      <div class="card" id="dashboard">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">داشبورد تحلیلی</h2>
+        <canvas id="scoreChart"></canvas><div class="mg-radar-label">نمودار عنکبوتی محورهای اصلی</div><canvas id="radarChartTop"></canvas>
+      </div>
+
+      <!-- فرم اطلاعات اولیه -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="tooltip">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">نام مدرسه</label>
+          <input id="school" type="text" required>
+          <span class="tooltiptext">نام کامل مدرسه را وارد کنید</span>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">پایه تحصیلی</label>
+          <input id="grade" type="text" required>
+        </div>
+        <div class="tooltip">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">نام آموزگار</label>
+          <input id="teacher" type="text" required>
+          <span class="tooltiptext">نام و نام خانوادگی کامل آموزگار</span>
+        </div>
+        <div class="tooltip">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">کد پرسنلی (۸ رقم)</label>
+          <input id="personnel_code" type="text" maxlength="8" pattern="[0-9]{8}" required>
+          <span class="tooltiptext">کد پرسنلی ۸ رقمی را وارد کنید</span>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">نام بازدیدکننده</label>
+          <input id="inspector" type="text" required>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">تاریخ بازدید (میلادی)</label>
+          <input id="date" type="date" required>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">تاریخ بازدید (شمسی)</label>
+          <input id="persian_date" type="text" readonly>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">مدت زمان حضور (دقیقه)</label>
+          <input id="duration" type="number" required>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">توضیحات اضافی</label>
+          <textarea id="extra_comments" rows="3"></textarea>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">نمره پیش‌فرض (۱-۴)</label>
+          <input id="default_score" type="number" min="1" max="4" placeholder="نمره پیش‌فرض برای تمام بخش‌ها">
+          <button onclick="fillDefaultScores()" class="gradient-btn px-4 py-1 mt-2">اعمال نمره پیش‌فرض</button>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">بارگذاری فایل (اختیاری)</label>
+          <input id="upload_file" type="file">
+        </div>
+      </div>
+
+      <!-- بخش‌های ارزیابی -->
+      <div class="card overflow-x-auto" id="section1">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">بخش اول - محیط یادگیری و آمادگی کلاس</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>شاخص ارزیابی</th>
+              <th>توضیح/شواهد</th>
+              <th>امتیاز (۱-۴)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>۱</td>
+              <td>چیدمان کلاس متناسب با فعالیت‌های یادگیری</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۲</td>
+              <td>استفاده از محتوای بصری مرتبط با اهداف درس</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۳</td>
+              <td>ایجاد فضای عاطفی مثبت و یادگیرنده‌محور</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۴</td>
+              <td>آماده‌سازی ابزارهای کمک‌آموزشی متناسب</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۵</td>
+              <td>رعایت ایمنی، بهداشت و نظم کلاس</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="average mt-2">میانگین بخش ۱: <span id="avg1">0</span></p>
+      </div>
+
+      <div class="card overflow-x-auto" id="section2">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">بخش دوم - فرآیند تدریس و مدیریت یادگیری</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>شاخص ارزیابی</th>
+              <th>توضیح/نمونه‌ها</th>
+              <th>امتیاز (۱-۴)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>۱</td>
+              <td>شروع پویا و انگیزشی درس</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۲</td>
+              <td>تبیین اهداف یادگیری به زبان ساده</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۳</td>
+              <td>تسلط علمی و حرفه‌ای بر محتوای درس</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۴</td>
+              <td>رعایت توالی منطقی تدریس</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۵</td>
+              <td>استفاده از روش‌های نوین (کاوشگری، هوش مصنوعی)</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۶</td>
+              <td>مدیریت زمان و تنوع فعالیت‌ها</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۷</td>
+              <td>تعامل فعال با دانش‌آموزان</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۸</td>
+              <td>بهره‌گیری از فناوری آموزشی</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="average mt-2">میانگین بخش ۲: <span id="avg2">0</span></p>
+      </div>
+
+      <div class="card overflow-x-auto" id="section3">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">بخش سوم - یادگیری و مشارکت دانش‌آموزان</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>شاخص ارزیابی</th>
+              <th>شواهد</th>
+              <th>امتیاز (۱-۴)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>۱</td>
+              <td>مشارکت فعال دانش‌آموزان</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۲</td>
+              <td>تسلط دانش‌آموزان بر اهداف درس</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۳</td>
+              <td>احترام متقابل و روحیه همکاری</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۴</td>
+              <td>توجه به تفاوت‌های فردی</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۵</td>
+              <td>اجرای ارزشیابی تکوینی</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="average mt-2">میانگین بخش ۳: <span id="avg3">0</span></p>
+      </div>
+
+      <div class="card overflow-x-auto" id="section4">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">بخش چهارم - ارزشیابی کیفی و بازخورد</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>شاخص ارزیابی</th>
+              <th>شواهد/نمونه</th>
+              <th>امتیاز (۱-۴)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>۱</td>
+              <td>ارزشیابی مستمر با شواهد عینی</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۲</td>
+              <td>استفاده از ابزارهای متنوع کیفی</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۳</td>
+              <td>ارائه بازخوردهای توصیفی و سازنده</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+            <tr>
+              <td>۴</td>
+              <td>ثبت و تحلیل نتایج ارزشیابی</td>
+              <td><textarea rows="2"></textarea></td>
+              <td><select class="score"><option value="">انتخاب</option><option value="1">۱</option><option value="2">۲</option><option value="3">۳</option><option value="4">۴</option></select></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="average mt-2">میانگین بخش ۴: <span id="avg4">0</span></p>
+      </div>
+
+      <div class="card">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">بخش پنجم - تحلیل تخصصی و پیشنهادات</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>محور</th>
+              <th>نکات قوت</th>
+              <th>نکات قابل بهبود</th>
+              <th>پیشنهادات تخصصی</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>مدیریت کلاس</td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+            </tr>
+            <tr>
+              <td>روش تدریس</td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+            </tr>
+            <tr>
+              <td>استفاده از فناوری</td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+            </tr>
+            <tr>
+              <td>تعامل با دانش‌آموزان</td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+            </tr>
+            <tr>
+              <td>ارزشیابی و بازخورد</td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+              <td><textarea rows="2" class="analysis-textarea"></textarea></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">بخش ششم - خودارزیابی معلم</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">نقاط قوت تدریس امروز</label>
+            <textarea id="teacher_strengths" rows="2"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">چالش‌های مشاهده‌شده</label>
+            <textarea id="teacher_challenges" rows="2"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">پیشنهاد برای بهبود</label>
+            <textarea id="teacher_suggestions" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="text-lg font-semibold text-blue-800 mb-3 dark-mode:text-blue-300">جمع‌بندی بازدیدکننده</h2>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">تحلیل کلی عملکرد (حداکثر ۲۰۰ کلمه)</label>
+          <textarea id="summary" rows="4"></textarea>
+        </div>
+        <div class="mt-3">
+          <label class="block text-xs font-medium text-gray-700 dark-mode:text-gray-300">ارزیابی نهایی</label>
+          <select id="final_evaluation">
+            <option value="عالی">عالی (۳.۵-۴)</option>
+            <option value="خوب">خوب (۲.۵-۳.۴)</option>
+            <option value="قابل قبول">قابل قبول (۱.۵-۲.۴)</option>
+            <option value="نیازمند تلاش">نیازمند تلاش (زیر ۱.۵)</option>
+          </select>
+        </div>
+        <p class="average mt-4">معدل کل: <span id="overall_avg">0</span></p>
+        <div class="mt-4">
+          <h3 class="text-md font-semibold text-blue-800 dark-mode:text-blue-300">تحلیل هوشمند</h3>
+          <table class="mt-2">
+            <thead>
+              <tr>
+                <th>محور تحلیل</th>
+                <th>توضیحات</th>
+              </tr>
+            </thead>
+            <tbody id="smart_analysis">
+              <tr><td>تحلیل توانایی</td><td>-</td></tr>
+              <tr><td>تحلیل هوش</td><td>-</td></tr>
+              <tr><td>تحلیل روانشناسی</td><td>-</td></tr>
+              <tr><td>تحلیل عملکرد کلی</td><td>-</td></tr>
+              <tr><td>تحلیل نقاط قوت و ضعف</td><td>-</td></tr>
+              <tr><td>پیشنهادات</td><td>-</td></tr>
+              <tr><td>وضعیت پاداش/تشویق</td><td>-</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="button-container flex justify-center space-x-2 mt-6 md:space-x-4">
+        <button onclick="startTour()" class="gradient-btn">راهنمای تعاملی</button>
+        <button onclick="saveForm()" class="gradient-btn">ذخیره فرم</button>
+        <button onclick="previewForm()" class="gradient-btn">پیش‌نمایش گزارش</button>
+        <button onclick="printForm()" class="gradient-btn">چاپ گزارش (PDF)</button>
+        <button onclick="exportToCSV()" class="gradient-btn">صادرات به اکسل</button>
+        <button onclick="clearForm()" class="gradient-btn">پاک کردن فرم</button>
+      </div>
+    </div>
+  </div>
+
+        </div>
+      </div>
+
+      <div class="card mg-analysis-card" id="advancedAnalysisCard">
+        <div class="mg-section-title"><span>◈</span><div><h2>تحلیل هوشمند و راهبردی</h2><small>تحلیل غیرتشخیصی و مبتنی بر الگوی امتیازهای همین فرم</small></div></div>
+        <div class="mg-analysis-grid">
+          <div><div class="mg-metric"><span>معدل کل از ۱۰۰</span><strong id="overall_percent">۰٪</strong></div><div class="mg-progress"><i id="overall_progress"></i></div></div>
+          <div><div class="mg-metric"><span>وضعیت عملکرد</span><strong><i id="overall_status_dot" class="mg-status-dot gray"></i><span id="overall_status_text">در انتظار ارزیابی</span></strong></div></div>
+        </div>
+        <div class="mg-radar-wrap"><canvas id="radarChart"></canvas></div>
+        <table class="mg-smart-table"><thead><tr><th>ردیف</th><th>نوع تحلیل</th><th>نتیجه / تفسیر</th><th>راهبرد پیشنهادی</th></tr></thead><tbody id="smart_analysis_12"></tbody></table>
+      </div>
+
+      <div class="card mg-sign-card">
+        <div class="mg-section-title"><span>✍</span><div><h2>امضای دیجیتال بازدیدکننده</h2><small>با انگشت یا قلم روی کادر امضا کنید</small></div></div>
+        <canvas id="signatureCanvas" width="900" height="260"></canvas>
+        <div class="mg-sign-actions"><button type="button" id="clearSignatureBtn" class="mg-btn mg-dark">پاک کردن امضا</button><span id="signatureStatus">بدون امضا</span></div>
+      </div>
+
+  <div class="footer">
+    سازنده: حسین هادی پور 🔨
+  </div>
+
+  <script>
+    // پیام خوش‌آمدگویی و تبدیل تاریخ میلادی به شمسی
+    window.onload = function() {
+      Swal.fire({
+        icon: 'info',
+        title: 'خوش‌آمدگویی',
+        html: 'لطفاً فرم را با دقت پر کنید. برای ذخیره داده‌ها از دکمه "ذخیره فرم" استفاده کنید.<br>برای راهنمایی، از دکمه "راهنمای تعاملی" استفاده کنید.',
+        confirmButtonText: 'باشه'
+      });
+
+      // تبدیل تاریخ میلادی به شمسی
+      document.getElementById('date').addEventListener('change', function() {
+        const date = this.value;
+        if (date) {
+          const persianDate = moment(date).locale('fa').format('YYYY/MM/DD');
+          document.getElementById('persian_date').value = persianDate;
+        } else {
+          document.getElementById('persian_date').value = '';
+        }
+      });
+
+      // بارگذاری لیست فرم‌های ذخیره‌شده
+      loadFormList();
+
+      // جستجوی پیشرفته
+      document.getElementById('search_form').addEventListener('input', filterForms);
+
+      // اعتبارسنجی ورودی‌ها
+      document.getElementById('personnel_code').addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 8) {
+          this.value = this.value.slice(0, 8);
+          Swal.fire({
+            icon: 'warning',
+            title: 'هشدار',
+            text: 'کد پرسنلی باید ۸ رقم باشد.',
+          });
+        }
+      });
+
+      document.querySelectorAll('.score').forEach(input => {
+        input.addEventListener('change', function() {
+          const value = parseFloat(this.value);
+          if (value < 1 || value > 4) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'هشدار',
+              text: 'امتیاز باید بین ۱ تا ۴ باشد.',
+            });
+            this.value = '';
+          }
+          calculateAverages();
+        });
+      });
+
+      // بررسی فیلدهای اجباری
+      document.querySelectorAll('input[required], select[required]').forEach(input => {
+        input.addEventListener('blur', function() {
+          if (!this.value) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'هشدار',
+              text: `فیلد ${this.previousElementSibling.textContent} اجباری است.`,
+            });
+          }
+        });
+      });
+
+      // نمایش نمودار اولیه
+      updateChart();
+    };
+
+    // تابع بارگذاری لیست فرم‌ها با بررسی تکرار کد پرسنلی
+    function loadFormList() {
+      const select = document.getElementById('load_form_select');
+      select.innerHTML = '<option value="">-- هیچ‌کدام --</option>';
+      const personnelCodes = {};
+      Object.keys(localStorage).filter(key => key.startsWith('inspection_form_')).forEach(key => {
+        const formData = JSON.parse(localStorage.getItem(key));
+        let displayName = `${formData.teacher} - ${formData.persian_date} - ${formData.personnel_code}`;
+        const code = formData.personnel_code;
+        if (personnelCodes[code]) {
+          personnelCodes[code]++;
+          displayName += ` (${personnelCodes[code]})`;
+        } else {
+          personnelCodes[code] = 1;
+        }
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = displayName;
+        select.appendChild(option);
+      });
+    }
+
+    // تابع جستجوی پیشرفته
+    function filterForms() {
+      const searchValue = document.getElementById('search_form').value.toLowerCase();
+      const select = document.getElementById('load_form_select');
+      select.innerHTML = '<option value="">-- هیچ‌کدام --</option>';
+      const personnelCodes = {};
+      Object.keys(localStorage).filter(key => key.startsWith('inspection_form_')).forEach(key => {
+        const formData = JSON.parse(localStorage.getItem(key));
+        const searchString = `${formData.teacher} ${formData.personnel_code} ${formData.persian_date}`.toLowerCase();
+        if (searchString.includes(searchValue)) {
+          let displayName = `${formData.teacher} - ${formData.persian_date} - ${formData.personnel_code}`;
+          const code = formData.personnel_code;
+          if (personnelCodes[code]) {
+            personnelCodes[code]++;
+            displayName += ` (${personnelCodes[code]})`;
+          } else {
+            personnelCodes[code] = 1;
+          }
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = displayName;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    // تابع راهنمای تعاملی
+    function startTour() {
+      Swal.fire({
+        title: 'راهنمای تعاملی',
+        html: `
+          <p>1. <b>اطلاعات اولیه:</b> فیلدهای اجباری مانند نام مدرسه و کد پرسنلی را پر کنید.</p>
+          <p>2. <b>بخش‌های ارزیابی:</b> برای هر شاخص امتیاز (۱-۴) و توضیحات وارد کنید.</p>
+          <p>3. <b>نمره پیش‌فرض:</b> از این گزینه برای پر کردن سریع فرم استفاده کنید.</p>
+          <p>4. <b>جستجوی فرم:</b> فرم‌های قبلی را با نام یا کد پرسنلی جستجو کنید.</p>
+          <p>5. <b>ذخیره و چاپ:</b> فرم را ذخیره کرده و گزارش PDF تولید کنید.</p>
+          <p>6. <b>حالت تاریک:</b> برای راحتی چشم، از دکمه حالت تاریک استفاده کنید.</p>
+        `,
+        confirmButtonText: 'باشه',
+        showCancelButton: true,
+        cancelButtonText: 'بستن'
+      });
+    }
+
+    // تابع تغییر حالت تاریک
+    document.getElementById('toggleDarkMode').addEventListener('click', function() {
+      document.body.classList.toggle('dark-mode');
+      document.querySelectorAll('.card, .average, .footer, th, td, label').forEach(el => el.classList.toggle('dark-mode'));
+      this.textContent = document.body.classList.contains('dark-mode') ? 'تغییر به حالت روشن' : 'تغییر به حالت تاریک';
+    });
+
+    // تابع به‌روزرسانی نمودار
+    let scoreChart;
+    function updateChart(formData = null) {
+      const ctx = document.getElementById('scoreChart').getContext('2d');
+      const averages = formData ? [
+        (formData.scores.slice(0, 5).reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / 5).toFixed(2),
+        (formData.scores.slice(5, 13).reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / 8).toFixed(2),
+        (formData.scores.slice(13, 18).reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / 5).toFixed(2),
+        (formData.scores.slice(18, 22).reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / 4).toFixed(2)
+      ] : [0, 0, 0, 0];
+
+      if (scoreChart) scoreChart.destroy();
+      scoreChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['بخش ۱', 'بخش ۲', 'بخش ۳', 'بخش ۴'],
+          datasets: [{
+            label: 'میانگین نمرات',
+            data: averages,
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+            borderColor: ['#1e40af', '#059669', '#d97706', '#b91c1c'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: { beginAtZero: true, max: 4 }
+          }
+        }
+      });
+    }
+
+    // تابع بارگذاری فرم انتخاب‌شده
+    function loadForm() {
+      const select = document.getElementById('load_form_select');
+      const key = select.value;
+      if (!key) return;
+
+      const formData = JSON.parse(localStorage.getItem(key));
+      if (formData) {
+        document.getElementById('school').value = formData.school || '';
+        document.getElementById('grade').value = formData.grade || '';
+        document.getElementById('teacher').value = formData.teacher || '';
+        document.getElementById('personnel_code').value = formData.personnel_code || '';
+        document.getElementById('inspector').value = formData.inspector || '';
+        document.getElementById('date').value = formData.date || '';
+        document.getElementById('persian_date').value = formData.persian_date || '';
+        document.getElementById('duration').value = formData.duration || '';
+        document.getElementById('extra_comments').value = formData.extra_comments || '';
+        const allScores = document.querySelectorAll('.score');
+        if (formData.scores) {
+          formData.scores.forEach((score, index) => {
+            if (allScores[index]) allScores[index].value = score;
+          });
+        }
+        const allComments = document.querySelectorAll('textarea:not(#summary, #teacher_strengths, #teacher_challenges, #teacher_suggestions, .analysis-textarea, #extra_comments)');
+        if (formData.comments) {
+          formData.comments.forEach((comment, index) => {
+            if (allComments[index]) allComments[index].value = comment;
+          });
+        }
+        const analysisComments = document.querySelectorAll('.analysis-textarea');
+        if (formData.analysis_comments) {
+          formData.analysis_comments.forEach((comment, index) => {
+            if (analysisComments[index]) analysisComments[index].value = comment;
+          });
+        }
+        document.getElementById('teacher_strengths').value = formData.teacher_strengths || '';
+        document.getElementById('teacher_challenges').value = formData.teacher_challenges || '';
+        document.getElementById('teacher_suggestions').value = formData.teacher_suggestions || '';
+        document.getElementById('summary').value = formData.summary || '';
+        document.getElementById('final_evaluation').value = formData.final_evaluation || 'عالی';
+        calculateAverages();
+        updateChart(formData);
+        Swal.fire({
+          icon: 'success',
+          title: 'بارگذاری شد',
+          text: 'فرم انتخاب‌شده با موفقیت بارگذاری شد.',
+        });
+      }
+    }
+
+    // تابع اعمال نمره پیش‌فرض
+    function fillDefaultScores() {
+      const defaultScore = parseInt(document.getElementById('default_score').value);
+      if (isNaN(defaultScore) || defaultScore < 1 || defaultScore > 4) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: 'نمره پیش‌فرض باید بین ۱ تا ۴ باشد.',
+        });
+        return;
+      }
+
+      document.querySelectorAll('.score').forEach(select => {
+        select.value = defaultScore.toString();
+      });
+
+      const defaultSectionComments = {
+        4: 'عالی، بدون نقص و با اجرای کامل.',
+        3: 'خوب، با عملکرد مناسب اما قابل بهبود.',
+        2: 'قابل قبول، اما نیاز به تلاش بیشتر.',
+        1: 'نیازمند بهبود اساسی و توجه ویژه.'
+      };
+      const allComments = document.querySelectorAll('textarea:not(#summary, #teacher_strengths, #teacher_challenges, #teacher_suggestions, .analysis-textarea, #extra_comments)');
+      allComments.forEach(textarea => {
+        textarea.value = defaultSectionComments[defaultScore];
+      });
+
+      const defaultAnalysis = {
+        4: { strength: 'عالی با نقاط قوت برجسته', improvement: 'بدون نیاز به بهبود', suggestion: 'ادامه همین روند' },
+        3: { strength: 'خوب با عملکرد مناسب', improvement: 'قابل بهبود در جزئیات', suggestion: 'تمرکز روی نقاط ضعف کوچک' },
+        2: { strength: 'قابل قبول', improvement: 'نیاز به تلاش بیشتر', suggestion: 'برنامه‌ریزی برای بهبود' },
+        1: { strength: 'پایه‌ای', improvement: 'نیازمند بهبود اساسی', suggestion: 'دوره‌های آموزشی فوری' }
+      };
+      const analysisComments = document.querySelectorAll('.analysis-textarea');
+      analysisComments.forEach((textarea, index) => {
+        const type = index % 3;
+        const data = defaultAnalysis[defaultScore];
+        if (type === 0) textarea.value = data.strength;
+        if (type === 1) textarea.value = data.improvement;
+        if (type === 2) textarea.value = data.suggestion;
+      });
+
+      const defaultSelfEval = {
+        4: { strengths: 'عالی در تمام جنبه‌ها', challenges: 'بدون چالش', suggestions: 'ادامه پیشرفت' },
+        3: { strengths: 'خوب با نقاط قوت', challenges: 'چالش‌های جزئی', suggestions: 'بهبود جزئی' },
+        2: { strengths: 'پایه‌ای', challenges: 'چالش‌های متوسط', suggestions: 'تلاش بیشتر' },
+        1: { strengths: 'نیاز به توسعه', challenges: 'چالش‌های جدی', suggestions: 'بهبود اساسی' }
+      };
+      document.getElementById('teacher_strengths').value = defaultSelfEval[defaultScore].strengths;
+      document.getElementById('teacher_challenges').value = defaultSelfEval[defaultScore].challenges;
+      document.getElementById('teacher_suggestions').value = defaultSelfEval[defaultScore].suggestions;
+
+      const defaultSummary = {
+        4: 'عملکرد عالی با نتایج برجسته.',
+        3: 'عملکرد خوب با پتانسیل رشد.',
+        2: 'عملکرد قابل قبول اما نیاز به بهبود.',
+        1: 'عملکرد نیازمند تلاش بیشتر.'
+      };
+      document.getElementById('summary').value = defaultSummary[defaultScore];
+      document.getElementById('final_evaluation').value = defaultScore >= 3.5 ? 'عالی' : defaultScore >= 2.5 ? 'خوب' : defaultScore >= 1.5 ? 'قابل قبول' : 'نیازمند تلاش';
+
+      calculateAverages();
+      Swal.fire({
+        icon: 'success',
+        title: 'اعمال شد',
+        text: 'نمره پیش‌فرض و توضیحات در تمام بخش‌ها اعمال شد.',
+      });
+    }
+
+    // تابع محاسبه میانگین‌ها
+    function calculateAverages() {
+      const sections = [
+        { id: 'section1', avgId: 'avg1', count: 5 },
+        { id: 'section2', avgId: 'avg2', count: 8 },
+        { id: 'section3', avgId: 'avg3', count: 5 },
+        { id: 'section4', avgId: 'avg4', count: 4 }
+      ];
+
+      let totalSum = 0;
+      let totalCount = 0;
+      const averages = [];
+
+      sections.forEach(section => {
+        const scores = document.querySelectorAll(`#${section.id} .score`);
+        let sum = 0;
+        let validCount = 0;
+        scores.forEach(scoreInput => {
+          const value = parseFloat(scoreInput.value);
+          if (!isNaN(value) && value >= 1 && value <= 4) {
+            sum += value;
+            validCount++;
+          }
+        });
+        const avg = validCount > 0 ? (sum / validCount).toFixed(2) : 0;
+        document.getElementById(section.avgId).textContent = avg;
+        averages.push(parseFloat(avg));
+
+        totalSum += sum;
+        totalCount += validCount;
+      });
+
+      const overallAvg = totalCount > 0 ? (totalSum / totalCount).toFixed(2) : 0;
+      document.getElementById('overall_avg').textContent = overallAvg;
+
+      // به‌روزرسانی نمودار
+      updateChart({ scores: Array.from(document.querySelectorAll('.score')).map(s => s.value) });
+
+      // اعلان برای میانگین پایین
+      if (overallAvg < 1.5 && overallAvg > 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'هشدار',
+          text: 'معدل کل زیر ۱.۵ است. لطفاً نقاط ضعف را بررسی کنید.',
+        });
+      }
+
+      generateSmartAnalysis(overallAvg);
+    }
+
+    // تابع تولید تحلیل هوشمند
+    function generateSmartAnalysis(avg) {
+      let analysis = [];
+      if (avg >= 3.5) {
+        analysis = [
+          ['تحلیل توانایی', 'آموزگار دارای توانایی‌های برجسته در مدیریت کلاس، تدریس خلاقانه و استفاده بهینه از منابع است.'],
+          ['تحلیل هوش', 'سطح هوش هیجانی و عملی بالا، با قابلیت حل مسئله پیچیده در محیط آموزشی.'],
+          ['تحلیل روانشناسی', 'شخصیت extroverted و agreeable، با مهارت‌های بالای همدلی و مدیریت استرس.'],
+          ['تحلیل عملکرد کلی', 'عملکرد کلی عالی، با نقاط قوت در تمام بخش‌ها.'],
+          ['تحلیل نقاط قوت و ضعف', 'قوت: خلاقیت و تعامل بالا. ضعف: ممکن است نیاز به تنوع بیشتر در ابزارهای دیجیتال.'],
+          ['پیشنهادات', 'شرکت در کنفرانس‌های آموزشی بین‌المللی و توسعه برنامه‌های مبتنی بر AI.'],
+          ['وضعیت پاداش/تشویق', 'شایسته پاداش مالی و ارتقاء شغلی است.']
+        ];
+      } else if (avg >= 2.5) {
+        analysis = [
+          ['تحلیل توانایی', 'توانایی‌های خوب در تدریس و مدیریت کلاس، اما نیاز به تقویت در تفاوت‌گذاری فردی.'],
+          ['تحلیل هوش', 'هوش متوسط با پتانسیل رشد در حوزه‌های عملی و تحلیلی.'],
+          ['تحلیل روانشناسی', 'شخصیت متعادل با تمایل به conscientiousness، نیاز به مدیریت بهتر هیجانات.'],
+          ['تحلیل عملکرد کلی', 'عملکرد خوب با پیشرفت در تعامل و ارزشیابی، اما نقاط ضعف در مدیریت زمان.'],
+          ['تحلیل نقاط قوت و ضعف', 'قوت: تعامل قوی. ضعف: کمبود تنوع در روش‌های تدریس.'],
+          ['پیشنهادات', 'شرکت در دوره‌های روانشناختی آموزشی و کارگاه‌های فناوری.'],
+          ['وضعیت پاداش/تشویق', 'شایسته تشویق و حمایت آموزشی است.']
+        ];
+      } else if (avg >= 1.5) {
+        analysis = [
+          ['تحلیل توانایی', 'توانایی‌های پایه‌ای در تدریس، اما ضعف در مدیریت کلاس و فناوری.'],
+          ['تحلیل هوش', 'هوش عملی متوسط، نیاز به تقویت در حل مسئله و خلاقیت آموزشی.'],
+          ['تحلیل روانشناسی', 'ممکن است نشانه‌های استرس یا کمبود اعتمادبه‌نفس وجود داشته باشد.'],
+          ['تحلیل عملکرد کلی', 'عملکرد قابل قبول اما ناکافی، نیاز به بهبود در تمام بخش‌ها.'],
+          ['تحلیل نقاط قوت و ضعف', 'قوت: تلاش پایه‌ای. ضعف: عدم تنوع در روش‌ها.'],
+          ['پیشنهادات', 'برنامه مربیگری فشرده و دوره‌های پایه‌ای روانشناختی و فناوری.'],
+          ['وضعیت پاداش/تشویق', 'نیاز به بهبود و حمایت دارد.']
+        ];
+      } else {
+        analysis = [
+          ['تحلیل توانایی', 'نیاز به توسعه اساسی در تمام حوزه‌های تدریس و مدیریت.'],
+          ['تحلیل هوش', 'پتانسیل هوشی وجود دارد، اما نیازمند آموزش پایه‌ای.'],
+          ['تحلیل روانشناسی', 'چالش‌های عاطفی احتمالی مانند خستگی یا کمبود انگیزه.'],
+          ['تحلیل عملکرد کلی', 'عملکرد ضعیف، نیاز به بازسازی کامل رویکرد آموزشی.'],
+          ['تحلیل نقاط قوت و ضعف', 'قوت: تمایل به تلاش. ضعف: کمبود در تمام بخش‌ها.'],
+          ['پیشنهادات', 'برنامه بهبود شخصی‌سازی‌شده و نظارت مستقیم.'],
+          ['وضعیت پاداش/تشویق', 'نیاز به تلاش بیشتر و حمایت فوری دارد.']
+        ];
+      }
+
+      const analysisTable = analysis.map(row => `
+        <tr>
+          <td>${row[0]}</td>
+          <td>${row[1]}</td>
+        </tr>
+      `).join('');
+      document.getElementById('smart_analysis').innerHTML = analysisTable;
+    }
+
+    // ذخیره فرم در localStorage
+    function saveForm() {
+      const personnelCode = document.getElementById('personnel_code').value;
+      if (!/^\d{8}$/.test(personnelCode)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: 'کد پرسنلی باید ۸ رقم عددی باشد.',
+        });
+        return;
+      }
+
+      const scores = Array.from(document.querySelectorAll('.score')).map(input => input.value);
+      if (scores.some(score => !score || score < 1 || score > 4)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: 'لطفاً تمام امتیازات را از ۱ تا ۴ انتخاب کنید.',
+        });
+        return;
+      }
+
+      const formData = {
+        school: document.getElementById('school').value,
+        grade: document.getElementById('grade').value,
+        teacher: document.getElementById('teacher').value,
+        personnel_code: personnelCode,
+        inspector: document.getElementById('inspector').value,
+        date: document.getElementById('date').value,
+        persian_date: document.getElementById('persian_date').value,
+        duration: document.getElementById('duration').value,
+        extra_comments: document.getElementById('extra_comments').value,
+        scores: scores,
+        comments: Array.from(document.querySelectorAll('textarea:not(#summary, #teacher_strengths, #teacher_challenges, #teacher_suggestions, .analysis-textarea, #extra_comments)')).map(textarea => textarea.value),
+        analysis_comments: Array.from(document.querySelectorAll('.analysis-textarea')).map(textarea => textarea.value),
+        teacher_strengths: document.getElementById('teacher_strengths').value,
+        teacher_challenges: document.getElementById('teacher_challenges').value,
+        teacher_suggestions: document.getElementById('teacher_suggestions').value,
+        summary: document.getElementById('summary').value,
+        final_evaluation: document.getElementById('final_evaluation').value
+      };
+
+      if (!formData.school || !formData.grade || !formData.teacher || !formData.inspector || !formData.date || !formData.duration) {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: 'لطفاً تمام فیلدهای اطلاعات اولیه را پر کنید.',
+        });
+        return;
+      }
+
+      const key = `inspection_form_${formData.teacher}_${formData.date}`;
+      localStorage.setItem(key, JSON.stringify(formData));
+      loadFormList();
+      Swal.fire({
+        icon: 'success',
+        title: 'ذخیره شد',
+        text: 'فرم با موفقیت ذخیره شد.',
+      });
+    }
+
+    // پیش‌نمایش گزارش
+    function previewForm() {
+      const teacher = document.getElementById('teacher').value || 'unknown';
+      const date = document.getElementById('date').value || 'unknown';
+      const formData = JSON.parse(localStorage.getItem(`inspection_form_${teacher}_${date}`));
+      if (!formData) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'هشدار',
+          text: 'ابتدا فرم را ذخیره کنید.',
+        });
+        return;
+      }
+
+      const content = generatePrintContent(formData);
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(content);
+        win.document.close();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: 'نمی‌توان پنجره پیش‌نمایش را باز کرد! لطفاً تنظیمات مرورگر را بررسی کنید.',
+          confirmButtonText: 'باشه'
+        });
+      }
+    }
+
+    // چاپ فرم
+    function printForm() {
+      const teacher = document.getElementById('teacher').value || 'unknown';
+      const date = document.getElementById('date').value || 'unknown';
+      const formData = JSON.parse(localStorage.getItem(`inspection_form_${teacher}_${date}`));
+      if (!formData) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'هشدار',
+          text: 'ابتدا فرم را ذخیره کنید.',
+        });
+        return;
+      }
+
+      const content = generatePrintContent(formData);
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(content);
+        win.document.close();
+        setTimeout(() => win.print(), 1000);
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: 'نمی‌توان پنجره چاپ را باز کرد! لطفاً تنظیمات مرورگر را بررسی کنید.',
+          confirmButtonText: 'باشه'
+        });
+      }
+    }
+
+    // تابع تولید محتوای چاپ
+    function generatePrintContent(formData) {
+      const sections = [
+        {
+          title: 'بخش اول - محیط یادگیری و آمادگی کلاس',
+          indicators: [
+            'چیدمان کلاس متناسب با فعالیت‌های یادگیری',
+            'استفاده از محتوای بصری مرتبط با اهداف درس',
+            'ایجاد فضای عاطفی مثبت و یادگیرنده‌محور',
+            'آماده‌سازی ابزارهای کمک‌آموزشی متناسب',
+            'رعایت ایمنی، بهداشت و نظم کلاس'
+          ],
+          scores: formData.scores.slice(0, 5),
+          comments: formData.comments.slice(0, 5),
+          avgId: 'avg1'
+        },
+        {
+          title: 'بخش دوم - فرآیند تدریس و مدیریت یادگیری',
+          indicators: [
+            'شروع پویا و انگیزشی درس',
+            'تبیین اهداف یادگیری به زبان ساده',
+            'تسلط علمی و حرفه‌ای بر محتوای درس',
+            'رعایت توالی منطقی تدریس',
+            'استفاده از روش‌های نوین (کاوشگری، هوش مصنوعی)',
+            'مدیریت زمان و تنوع فعالیت‌ها',
+            'تعامل فعال با دانش‌آموزان',
+            'بهره‌گیری از فناوری آموزشی'
+          ],
+          scores: formData.scores.slice(5, 13),
+          comments: formData.comments.slice(5, 13),
+          avgId: 'avg2'
+        },
+        {
+          title: 'بخش سوم - یادگیری و مشارکت دانش‌آموزان',
+          indicators: [
+            'مشارکت فعال دانش‌آموزان',
+            'تسلط دانش‌آموزان بر اهداف درس',
+            'احترام متقابل و روحیه همکاری',
+            'توجه به تفاوت‌های فردی',
+            'اجرای ارزشیابی تکوینی'
+          ],
+          scores: formData.scores.slice(13, 18),
+          comments: formData.comments.slice(13, 18),
+          avgId: 'avg3'
+        },
+        {
+          title: 'بخش چهارم - ارزشیابی کیفی و بازخورد',
+          indicators: [
+            'ارزشیابی مستمر با شواهد عینی',
+            'استفاده از ابزارهای متنوع کیفی',
+            'ارائه بازخوردهای توصیفی و سازنده',
+            'ثبت و تحلیل نتایج ارزشیابی'
+          ],
+          scores: formData.scores.slice(18, 22),
+          comments: formData.comments.slice(18, 22),
+          avgId: 'avg4'
+        }
+      ];
+
+      const analysisAxes = [
+        'مدیریت کلاس',
+        'روش تدریس',
+        'استفاده از فناوری',
+        'تعامل با دانش‌آموزان',
+        'ارزشیابی و بازخورد'
+      ];
+
+      let content = `
+        <html dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <link href="https://v1.fontapi.ir/css/Vazir:300,400,500" rel="stylesheet">
+          <style>
+            body {
+              font-family: Vazir, sans-serif;
+              font-size: 11px;
+              background: #fff;
+              color: #1F2937;
+              margin: 15px;
+            }
+            h3, h4 {
+              color: #1F2937;
+              text-align: center;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 10px 0;
+            }
+            th, td {
+              border: 1px solid #D1D5DB;
+              padding: 6px;
+              text-align: center;
+            }
+            th {
+              background: #3b82f6;
+              color: white;
+            }
+            .section {
+              margin-bottom: 15px;
+              page-break-inside: avoid;
+            }
+          </style>
+        </head>
+        <body>
+          <h3>گزارش بازدید آموزشی - ${formData.teacher}</h3>
+          <div class="section">
+            <h4>اطلاعات اولیه</h4>
+            <table>
+              <tr><th>مدرسه</th><td>${formData.school}</td></tr>
+              <tr><th>پایه تحصیلی</th><td>${formData.grade}</td></tr>
+              <tr><th>نام آموزگار</th><td>${formData.teacher}</td></tr>
+              <tr><th>کد پرسنلی</th><td>${formData.personnel_code}</td></tr>
+              <tr><th>نام بازدیدکننده</th><td>${formData.inspector}</td></tr>
+              <tr><th>تاریخ بازدید (میلادی)</th><td>${formData.date}</td></tr>
+              <tr><th>تاریخ بازدید (شمسی)</th><td>${formData.persian_date}</td></tr>
+              <tr><th>مدت زمان حضور</th><td>${formData.duration} دقیقه</td></tr>
+              <tr><th>توضیحات اضافی</th><td>${formData.extra_comments || '-'}</td></tr>
+            </table>
+          </div>
+      `;
+
+      sections.forEach(section => {
+        content += `
+          <div class="section">
+            <h4>${section.title}</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>ردیف</th>
+                  <th>شاخص ارزیابی</th>
+                  <th>توضیح/شواهد</th>
+                  <th>امتیاز</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${section.indicators.map((ind, i) => `
+                  <tr>
+                    <td>${i + 1}</td>
+                    <td>${ind}</td>
+                    <td>${section.comments[i] || '-'}</td>
+                    <td>${section.scores[i] || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <p>میانگین: ${document.getElementById(section.avgId).textContent}</p>
+          </div>
+        `;
+      });
+
+      content += `
+        <div class="section">
+          <h4>تحلیل تخصصی و پیشنهادات</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>محور</th>
+                <th>نکات قوت</th>
+                <th>نکات قابل بهبود</th>
+                <th>پیشنهادات تخصصی</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${analysisAxes.map((axis, i) => `
+                <tr>
+                  <td>${axis}</td>
+                  <td>${formData.analysis_comments[i * 3] || '-'}</td>
+                  <td>${formData.analysis_comments[i * 3 + 1] || '-'}</td>
+                  <td>${formData.analysis_comments[i * 3 + 2] || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="section">
+          <h4>خودارزیابی معلم</h4>
+          <table>
+            <tr><th>نقاط قوت</th><td>${formData.teacher_strengths || '-'}</td></tr>
+            <tr><th>چالش‌ها</th><td>${formData.teacher_challenges || '-'}</td></tr>
+            <tr><th>پیشنهادات</th><td>${formData.teacher_suggestions || '-'}</td></tr>
+          </table>
+        </div>
+        <div class="section">
+          <h4>جمع‌بندی</h4>
+          <table>
+            <tr><th>تحلیل کلی</th><td>${formData.summary || '-'}</td></tr>
+            <tr><th>ارزیابی نهایی</th><td>${formData.final_evaluation}</td></tr>
+            <tr><th>معدل کل</th><td>${document.getElementById('overall_avg').textContent}</td></tr>
+          </table>
+        </div>
+        <div class="section">
+          <h4>تحلیل هوشمند</h4>
+          <table>
+            <thead>
+              <tr><th>محور تحلیل</th><th>توضیحات</th></tr>
+            </thead>
+            <tbody>
+              ${document.getElementById('smart_analysis').innerHTML}
+            </tbody>
+          </table>
+        </div>
+        
+
+</body>
+        </html>
+      `;
+
+      return content;
+    }
+
+    // پاک کردن فرم
+    function clearForm() {
+      Swal.fire({
+        title: 'آیا مطمئن هستید؟',
+        text: 'تمام داده‌های فرم پاک خواهد شد.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'بله، پاک کن',
+        cancelButtonText: 'خیر'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.querySelectorAll('input, textarea, select').forEach(element => element.value = '');
+          document.querySelectorAll('.average span').forEach(span => span.textContent = '0');
+          document.getElementById('smart_analysis').innerHTML = `
+            <tr><td>تحلیل توانایی</td><td>-</td></tr>
+            <tr><td>تحلیل هوش</td><td>-</td></tr>
+            <tr><td>تحلیل روانشناسی</td><td>-</td></tr>
+            <tr><td>تحلیل عملکرد کلی</td><td>-</td></tr>
+            <tr><td>تحلیل نقاط قوت و ضعف</td><td>-</td></tr>
+            <tr><td>پیشنهادات</td><td>-</td></tr>
+            <tr><td>وضعیت پاداش/تشویق</td><td>-</td></tr>
+          `;
+          const teacher = document.getElementById('teacher').value || 'unknown';
+          const date = document.getElementById('date').value || 'unknown';
+          localStorage.removeItem(`inspection_form_${teacher}_${date}`);
+          loadFormList();
+          updateChart();
+          Swal.fire('پاک شد!', 'فرم با موفقیت پاک شد.', 'success');
+        }
+      });
+    }
+
+    // صادرات به CSV
+    function exportToCSV() {
+      const forms = Object.keys(localStorage)
+        .filter(key => key.startsWith('inspection_form_'))
+        .map(key => ({ key, data: JSON.parse(localStorage.getItem(key)) }));
+
+      if (forms.length === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'هشدار',
+          text: 'هیچ فرمی برای صادرات وجود ندارد.',
+        });
+        return;
+      }
+
+      const sectionIndicators = [
+        [
+          'چیدمان کلاس متناسب با فعالیت‌های یادگیری',
+          'استفاده از محتوای بصری مرتبط با اهداف درس',
+          'ایجاد فضای عاطفی مثبت و یادگیرنده‌محور',
+          'آماده‌سازی ابزارهای کمک‌آموزشی متناسب',
+          'رعایت ایمنی، بهداشت و نظم کلاس'
+        ],
+        [
+          'شروع پویا و انگیزشی درس',
+          'تبیین اهداف یادگیری به زبان ساده',
+          'تسلط علمی و حرفه‌ای بر محتوای درس',
+          'رعایت توالی منطقی تدریس',
+          'استفاده از روش‌های نوین (کاوشگری، هوش مصنوعی)',
+          'مدیریت زمان و تنوع فعالیت‌ها',
+          'تعامل فعال با دانش‌آموزان',
+          'بهره‌گیری از فناوری آموزشی'
+        ],
+        [
+          'مشارکت فعال دانش‌آموزان',
+          'تسلط دانش‌آموزان بر اهداف درس',
+          'احترام متقابل و روحیه همکاری',
+          'توجه به تفاوت‌های فردی',
+          'اجرای ارزشیابی تکوینی'
+        ],
+        [
+          'ارزشیابی مستمر با شواهد عینی',
+          'استفاده از ابزارهای متنوع کیفی',
+          'ارائه بازخوردهای توصیفی و سازنده',
+          'ثبت و تحلیل نتایج ارزشیابی'
+        ]
+      ];
+
+      const analysisAxes = [
+        'مدیریت کلاس',
+        'روش تدریس',
+        'استفاده از فناوری',
+        'تعامل با دانش‌آموزان',
+        'ارزشیابی و بازخورد'
+      ];
+
+      const headers = [
+        'نام مدرسه', 'پایه تحصیلی', 'نام آموزگار', 'کد پرسنلی', 'نام بازدیدکننده',
+        'تاریخ (میلادی)', 'تاریخ (شمسی)', 'مدت زمان حضور (دقیقه)', 'توضیحات اضافی',
+        ...sectionIndicators[0].map((ind, i) => `امتیاز بخش 1-${i + 1} (${ind})`),
+        ...sectionIndicators[0].map((ind, i) => `توضیح بخش 1-${i + 1} (${ind})`),
+        'میانگین بخش 1',
+        ...sectionIndicators[1].map((ind, i) => `امتیاز بخش 2-${i + 1} (${ind})`),
+        ...sectionIndicators[1].map((ind, i) => `توضیح بخش 2-${i + 1} (${ind})`),
+        'میانگین بخش 2',
+        ...sectionIndicators[2].map((ind, i) => `امتیاز بخش 3-${i + 1} (${ind})`),
+        ...sectionIndicators[2].map((ind, i) => `توضیح بخش 3-${i + 1} (${ind})`),
+        'میانگین بخش 3',
+        ...sectionIndicators[3].map((ind, i) => `امتیاز بخش 4-${i + 1} (${ind})`),
+        ...sectionIndicators[3].map((ind, i) => `توضیح بخش 4-${i + 1} (${ind})`),
+        'میانگین بخش 4',
+        ...analysisAxes.map(axis => `تحلیل ${axis} - قوت`),
+        ...analysisAxes.map(axis => `تحلیل ${axis} - بهبود`),
+        ...analysisAxes.map(axis => `تحلیل ${axis} - پیشنهاد`),
+        'خودارزیابی - نقاط قوت', 'خودارزیابی - چالش‌ها', 'خودارزیابی - پیشنهادات',
+        'تحلیل کلی عملکرد', 'ارزیابی نهایی', 'معدل کل',
+        'تحلیل توانایی', 'تحلیل هوش', 'تحلیل روانشناسی', 'تحلیل عملکرد کلی',
+        'تحلیل نقاط قوت و ضعف', 'پیشنهادات', 'وضعیت پاداش/تشویق'
+      ];
+
+      const rows = forms.map(form => {
+        const formData = form.data;
+        const scores = formData.scores.map(s => parseFloat(s)).filter(s => !isNaN(s));
+        const section1 = scores.slice(0, 5);
+        const section2 = scores.slice(5, 13);
+        const section3 = scores.slice(13, 18);
+        const section4 = scores.slice(18, 22);
+        const avg1 = section1.length > 0 ? (section1.reduce((a, b) => a + b, 0) / section1.length).toFixed(2) : 0;
+        const avg2 = section2.length > 0 ? (section2.reduce((a, b) => a + b, 0) / section2.length).toFixed(2) : 0;
+        const avg3 = section3.length > 0 ? (section3.reduce((a, b) => a + b, 0) / section3.length).toFixed(2) : 0;
+        const avg4 = section4.length > 0 ? (section4.reduce((a, b) => a + b, 0) / section4.length).toFixed(2) : 0;
+        const overallAvg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 0;
+
+        let analysis = [];
+        if (overallAvg >= 3.5) {
+          analysis = [
+            'آموزگار دارای توانایی‌های برجسته در مدیریت کلاس، تدریس خلاقانه و استفاده بهینه از منابع است.',
+            'سطح هوش هیجانی و عملی بالا، با قابلیت حل مسئله پیچیده در محیط آموزشی.',
+            'شخصیت extroverted و agreeable، با مهارت‌های بالای همدلی و مدیریت استرس.',
+            'عملکرد کلی عالی، با نقاط قوت در تمام بخش‌ها.',
+            'قوت: خلاقیت و تعامل بالا. ضعف: ممکن است نیاز به تنوع بیشتر در ابزارهای دیجیتال.',
+            'شرکت در کنفرانس‌های آموزشی بین‌المللی و توسعه برنامه‌های مبتنی بر AI.',
+            'شایسته پاداش مالی و ارتقاء شغلی است.'
+          ];
+        } else if (overallAvg >= 2.5) {
+          analysis = [
+            'توانایی‌های خوب در تدریس و مدیریت کلاس، اما نیاز به تقویت در تفاوت‌گذاری فردی.',
+            'هوش متوسط با پتانسیل رشد در حوزه‌های عملی و تحلیلی.',
+            'شخصیت متعادل با تمایل به conscientiousness، نیاز به مدیریت بهتر هیجانات.',
+            'عملکرد خوب با پیشرفت در تعامل و ارزشیابی، اما نقاط ضعف در مدیریت زمان.',
+            'قوت: تعامل قوی. ضعف: کمبود تنوع در روش‌های تدریس.',
+            'شرکت در دوره‌های روانشناختی آموزشی و کارگاه‌های فناوری.',
+            'شایسته تشویق و حمایت آموزشی است.'
+          ];
+        } else if (overallAvg >= 1.5) {
+          analysis = [
+            'توانایی‌های پایه‌ای در تدریس، اما ضعف در مدیریت کلاس و فناوری.',
+            'هوش عملی متوسط، نیاز به تقویت در حل مسئله و خلاقیت آموزشی.',
+            'ممکن است نشانه‌های استرس یا کمبود اعتمادبه‌نفس وجود داشته باشد.',
+            'عملکرد قابل قبول اما ناکافی، نیاز به بهبود در تمام بخش‌ها.',
+            'قوت: تلاش پایه‌ای. ضعف: عدم تنوع در روش‌ها.',
+            'برنامه مربیگری فشرده و دوره‌های پایه‌ای روانشناختی و فناوری.',
+            'نیاز به بهبود و حمایت دارد.'
+          ];
+        } else {
+          analysis = [
+            'نیاز به توسعه اساسی در تمام حوزه‌های تدریس و مدیریت.',
+            'پتانسیل هوشی وجود دارد، اما نیازمند آموزش پایه‌ای.',
+            'چالش‌های عاطفی احتمالی مانند خستگی یا کمبود انگیزه.',
+            'عملکرد ضعیف، نیاز به بازسازی کامل رویکرد آموزشی.',
+            'قوت: تمایل به تلاش. ضعف: کمبود در تمام بخش‌ها.',
+            'برنامه بهبود شخصی‌سازی‌شده و نظارت مستقیم.',
+            'نیاز به تلاش بیشتر و حمایت فوری دارد.'
+          ];
+        }
+
+        return [
+          formData.school,
+          formData.grade,
+          formData.teacher,
+          formData.personnel_code,
+          formData.inspector,
+          formData.date,
+          formData.persian_date,
+          formData.duration,
+          formData.extra_comments || '-',
+          ...formData.scores.slice(0, 5),
+          ...formData.comments.slice(0, 5),
+          avg1,
+          ...formData.scores.slice(5, 13),
+          ...formData.comments.slice(5, 13),
+          avg2,
+          ...formData.scores.slice(13, 18),
+          ...formData.comments.slice(13, 18),
+          avg3,
+          ...formData.scores.slice(18, 22),
+          ...formData.comments.slice(18, 22),
+          avg4,
+          ...formData.analysis_comments,
+          formData.teacher_strengths || '-',
+          formData.teacher_challenges || '-',
+          formData.teacher_suggestions || '-',
+          formData.summary || '-',
+          formData.final_evaluation,
+          overallAvg,
+          ...analysis
+        ].map(val => `"${val}"`).join(',');
+      });
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + headers.join(',') + '\n' + rows.join('\n'));
+      const link = document.createElement('a');
+      link.setAttribute('href', csvContent);
+      link.setAttribute('download', 'inspection_forms.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'صادر شد',
+        text: 'داده‌ها با موفقیت به فایل CSV صادر شدند.',
+      });
+    }
+  </script>
+<script>
+/* ===== MG Functional Extension: live save, unique personnel records, JSON, Excel, radar, signature ===== */
+(function(){
+  'use strict';
+  var STORE='mg_employee_evaluations_v3', DRAFT='mg_current_draft_v3', OLDKEY='inspection_form_';
+  var editingCode='', autosaveTimer=null, signatureDirty=false, colorMode='color';
+  var indicatorMeta=[];
+  function q(s,c){return (c||document).querySelector(s)} function qa(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))}
+  function fa(n){var a=''; for(var i=0;i<n;i++)a+='0'; return a;}
+  function toast(msg,icon){ if(window.Swal) Swal.fire({toast:true,position:'top-end',timer:2200,showConfirmButton:false,icon:icon||'info',title:msg}); }
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]})}
+  function nowLocal(){var d=new Date(); function z(x){return x<10?'0'+x:x} return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds());}
+  function faDate(){var d=new Date(); try{if(window.moment){return moment(d).locale('fa').format('YYYY/MM/DD')} }catch(e){} return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();}
+  function records(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){return {}}}
+  function putRecords(o){try{localStorage.setItem(STORE,JSON.stringify(o));return true}catch(e){return false}}
+  function scoreInputs(){return qa('.score')}
+  function getStatus(avg){if(avg>=3.25)return ['green','عالی'];if(avg>=2.5)return ['yellow','خوب'];if(avg>=1.5)return ['orange','قابل قبول'];return ['red','نیازمند بهبود']}
+  function activeStates(){return qa('.mg-indicator-check').map(function(x){return x.checked})}
+  function calculate(){
+    var total=0,count=0,secA=[];
+    ['section1','section2','section3','section4'].forEach(function(id,si){var sum=0,n=0;qa('#'+id+' .score').forEach(function(s){var row=s.closest('tr'),ck=q('.mg-indicator-check',row);var v=parseFloat(s.value);if(ck&&ck.checked&&!isNaN(v)){sum+=v;n++;}colorScore(s);});var avg=n?sum/n:0;var el=q('#avg'+(si+1));if(el)el.textContent=avg.toFixed(2);secA.push(avg);total+=sum;count+=n;});
+    var avg=count?total/count:0, pct=avg/4*100; var op=q('#overall_percent');if(op)op.textContent=pct.toFixed(1)+'٪';var pr=q('#overall_progress');if(pr)pr.style.width=Math.max(0,Math.min(100,pct))+'%';
+    var st=getStatus(avg),dot=q('#overall_status_dot'),tx=q('#overall_status_text');if(dot){dot.className='mg-status-dot '+st[0]}if(tx)tx.textContent=st[1];
+    generate12(avg,secA); updateRadar(secA); return {avg:avg,pct:pct,sections:secA};
+  }
+  function colorScore(s){s.classList.remove('score-green','score-yellow','score-orange','score-red');var v=parseFloat(s.value);if(isNaN(v))return;s.classList.add(v>=3.5?'score-green':v>=2.5?'score-yellow':v>=1.5?'score-orange':'score-red');}
+  function collect(){
+    var c=q('#personnel_code')?q('#personnel_code').value.trim():'';var calc=calculate();
+    var data={version:3,recordId:c||('draft_'+Date.now()),personnel_code:c,school:q('#school').value,grade:q('#grade').value,teacher:q('#teacher').value,inspector:q('#inspector').value,date:q('#date').value,persian_date:q('#persian_date').value,duration:q('#duration').value,extra_comments:q('#extra_comments').value,scores:scoreInputs().map(function(x){return x.value}),active:activeStates(),comments:qa('textarea:not(#summary,#teacher_strengths,#teacher_challenges,#teacher_suggestions,.analysis-textarea,#extra_comments)').map(function(x){return x.value}),analysis_comments:qa('.analysis-textarea').map(function(x){return x.value}),teacher_strengths:q('#teacher_strengths').value,teacher_challenges:q('#teacher_challenges').value,teacher_suggestions:q('#teacher_suggestions').value,summary:q('#summary').value,final_evaluation:q('#final_evaluation').value,signature:q('#signatureCanvas')?q('#signatureCanvas').toDataURL('image/png'):'' ,overall:calc.avg,percent:calc.pct,updatedAt:nowLocal(),savedAt:(records()[c]||{}).savedAt||''};
+    return data;
+  }
+  function apply(data){
+    if(!data)return; editingCode=data.personnel_code||''; ['school','grade','teacher','personnel_code','inspector','date','persian_date','duration','extra_comments','teacher_strengths','teacher_challenges','teacher_suggestions','summary','final_evaluation'].forEach(function(id){if(q('#'+id))q('#'+id).value=data[id]||''});
+    var ss=scoreInputs();(data.scores||[]).forEach(function(v,i){if(ss[i])ss[i].value=v});var cs=qa('textarea:not(#summary,#teacher_strengths,#teacher_challenges,#teacher_suggestions,.analysis-textarea,#extra_comments)');(data.comments||[]).forEach(function(v,i){if(cs[i])cs[i].value=v});var ac=qa('.analysis-textarea');(data.analysis_comments||[]).forEach(function(v,i){if(ac[i])ac[i].value=v});
+    qa('.mg-indicator-check').forEach(function(x,i){x.checked=data.active?data.active[i]!==false:true});
+    restoreSignature(data.signature); calculate(); updateRecordsTable(); setLive('فرم آماده ویرایش است','ready');
+  }
+  function setLive(t,mode){var box=q('.mg-live'),tx=q('#liveText');if(tx)tx.textContent=t;if(box)box.className='mg-live '+(mode==='saving'?'saving':'');}
+  function autoSave(){clearTimeout(autosaveTimer);setLive('در حال ثبت لحظه‌ای…','saving');autosaveTimer=setTimeout(function(){var d=collect();try{localStorage.setItem(DRAFT,JSON.stringify(d));setLive('تغییرات در حافظه محلی ثبت شد','ready');var ls=q('#lastSavedText');if(ls)ls.textContent='آخرین تغییر: '+new Date().toLocaleTimeString();}catch(e){setLive('حافظه محلی پر شده است','ready')}},250);}
+  function saveFinal(){var d=collect();if(!/^\d{8}$/.test(d.personnel_code)){toast('کد پرسنلی باید ۸ رقم باشد','error');return}if(!d.teacher||!d.school){toast('نام آموزگار و مدرسه را تکمیل کنید','error');return}var o=records();var oldKey=editingCode&&editingCode!==d.personnel_code?editingCode:'';if(oldKey)delete o[oldKey];d.savedAt=nowLocal();o[d.personnel_code]=d;if(!putRecords(o)){toast('ذخیره انجام نشد؛ حافظه مرورگر پر است','error');return}editingCode=d.personnel_code;try{localStorage.removeItem(DRAFT)}catch(e){};updateRecordsTable();setLive('فرم با موفقیت ذخیره شد','ready');var ls=q('#lastSavedText');if(ls)ls.textContent='ذخیره قطعی: '+new Date().toLocaleTimeString();if(window.Swal)Swal.fire({icon:'success',title:'ذخیره شد',text:'اطلاعات این کد پرسنلی به‌روزرسانی شد.',confirmButtonText:'باشه'});}
+  function newForm(){var cur=collect();if(/^\d{8}$/.test(cur.personnel_code)&&cur.teacher&&cur.school){var ro=records();cur.savedAt=ro[cur.personnel_code]&&ro[cur.personnel_code].savedAt||nowLocal();ro[cur.personnel_code]=cur;putRecords(ro);editingCode=cur.personnel_code;}else{editingCode='';}qa('input,textarea,select').forEach(function(el){if(el.id!=='load_form_select'&&el.id!=='search_form'&&el.type!=='file')el.value=''});qa('.mg-indicator-check').forEach(function(x){x.checked=false});qa('.score').forEach(function(x){x.value=''});restoreSignature('');calculate();setLive('فرم جدید آماده است','ready');}
+  function fillRecordSelect(o){var sel=q('#load_form_select');if(!sel)return;var old=sel.value;sel.innerHTML='<option value="">-- انتخاب فرد ثبت‌شده --</option>';for(var k in o)if(o.hasOwnProperty(k)){var op=document.createElement('option');op.value=k;op.textContent=(o[k].teacher||'بدون نام')+' - '+(o[k].personnel_code||k);sel.appendChild(op)}if(o[old])sel.value=old;} function updateRecordsTable(){var o=records();fillRecordSelect(o);var body=q('#recordsBody');if(!body)return;var keys=[];for(var k in o)if(o.hasOwnProperty(k))keys.push(k);keys.sort(function(a,b){return (o[b].savedAt||'').localeCompare(o[a].savedAt||'')});body.innerHTML='';keys.forEach(function(k){var d=o[k],st=getStatus(parseFloat(d.overall)||0);var tr=document.createElement('tr');tr.className='mg-record-row';tr.innerHTML='<td><i class="mg-status-dot '+st[0]+'"></i></td><td>'+esc(d.teacher)+'</td><td>'+esc(d.personnel_code)+'</td><td>'+esc(d.grade)+'</td><td>'+((d.percent||0).toFixed?d.percent.toFixed(1):d.percent)+'٪</td><td>'+esc(d.savedAt||d.updatedAt||'')+'</td>';tr.onclick=function(){apply(o[k])};body.appendChild(tr)});var rc=q('#recordCount');if(rc)rc.textContent=keys.length;}
+  function setupIndicators(){
+    indicatorMeta=[];
+    qa('#section1,#section2,#section3,#section4').forEach(function(sec){
+      var head=q('h2',sec);
+      if(head && !q('.mg-axis-tools',head.parentNode)){
+        var tools=document.createElement('span');
+        tools.className='mg-axis-tools';
+        tools.innerHTML='<button type="button" class="mg-axis-toggle">پنهان/آشکار</button>';
+        head.parentNode.appendChild(tools);
+        tools.querySelector('button').onclick=function(e){
+          e.preventDefault();
+          var tbl=sec.querySelector('table'), av=sec.querySelector('.average');
+          var hidden=tbl && tbl.style.display==='none';
+          if(tbl)tbl.style.display=hidden?'table':'none';
+          if(av)av.style.display=hidden?'block':'none';
+        };
+      }
+      qa('tbody tr',sec).forEach(function(row){
+        var td=row.children[1];
+        if(!td || q('.mg-indicator-check',row))return;
+        var old=td.innerHTML;
+        td.innerHTML='<div class="mg-indicator-control"><input type="checkbox" class="mg-indicator-check"><label>'+old+'</label></div>';
+        var score=q('.score',row);
+        if(score){
+          var ck=q('.mg-indicator-check',row);
+          row.classList.remove('mg-row-off');
+          ck.addEventListener('change',function(){row.classList.toggle('mg-row-off',!this.checked);calculate();autoSave();});
+          score.addEventListener('change',function(){colorScore(this);calculate();autoSave();});
+        }
+      });
+    });
+  }
+  function generate12(avg,sa){var tb=q('#smart_analysis_12');if(!tb)return;var strengths=[],weak=[];sa.forEach(function(v,i){if(v>=3)strengths.push('محور '+(i+1));else if(v>0)weak.push('محور '+(i+1))});var level=avg>=3.5?'بالا':avg>=2.5?'مناسب':avg>=1.5?'نیازمند تقویت':'نیازمند مداخله آموزشی';var arr=[['عملکرد کلی', 'سطح عملکرد بر اساس امتیازهای فعال: '+level, 'تمرکز دوره‌ای بر شاخص‌های کم‌امتیاز'],['الگوی نقاط قوت',strengths.length?'محورهای با امتیاز بالاتر: '+strengths.join('، '):'هنوز داده کافی ثبت نشده','انتقال تجربه از محورهای قوی به محورهای ضعیف'],['الگوی نیاز بهبود',weak.length?'محورهای نیازمند توجه: '+weak.join('، '):'مورد برجسته‌ای شناسایی نشد','برنامه اقدام کوتاه‌مدت و قابل سنجش'],['ثبات عملکرد','تغییرات باید با سوابق زمانی مقایسه شود؛ این فرم تشخیص قطعی ثبات نیست','ثبت ارزیابی‌های دوره‌ای'],['تعامل آموزشی','از روی این فرم فقط می‌توان شاخص‌های ثبت‌شده تعامل را توصیف کرد','بازخورد مشاهده‌محور و مستند'],['مدیریت کلاس','امتیاز محورهای مرتبط مبنای این تحلیل است، نه تشخیص شخصیت','تمرین‌های مدیریت زمان و مشارکت'],['روش تدریس','سطح امتیازهای مرتبط با تدریس بررسی شد','تنوع روش‌ها بر اساس شواهد'],['فناوری آموزشی','امتیاز شاخص‌های فناوری در الگوی کلی لحاظ شد','انتخاب فناوری متناسب با هدف درس'],['ارزشیابی و بازخورد','امتیاز شاخص‌های ارزشیابی مبنای نتیجه است','بازخورد توصیفی و مستند'],['راهبرد رشد','فاصله تا ۱۰۰٪ به‌عنوان ظرفیت بهبود گزارش می‌شود','هدف‌گذاری مرحله‌ای'],['تحلیل روان‌شناختی غیرتشخیصی','این بخش فقط الگوی رفتاریِ ثبت‌شده در شاخص‌ها را توصیف می‌کند و تشخیص روان‌شناختی نیست','گفت‌وگوی حرفه‌ای و خودارزیابی'],['پیشنهاد مدیریتی','اولویت با شاخص‌های فعالِ کم‌امتیاز است','برنامه بهبود، پیگیری و ارزیابی مجدد']];tb.innerHTML=arr.map(function(r,i){return '<tr><td>'+ (i+1)+'</td><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td></tr>'}).join('');}
+  var radar1,radar2;
+  function radarConfig(labels,data){return {type:'radar',data:{labels:labels,datasets:[{label:'میانگین محور',data:data,backgroundColor:'rgba(124,58,237,.18)',borderColor:'#7c3aed',pointBackgroundColor:'#ec4899',pointRadius:4,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{beginAtZero:true,max:4,ticks:{stepSize:1,font:{size:8}},pointLabels:{font:{size:9}}}},plugins:{legend:{display:false}}}}}
+  function updateRadar(a){var labels=['محیط و آمادگی','تدریس و مدیریت','مشارکت دانش‌آموز','ارزشیابی'];var c=q('#radarChart'),ct=q('#radarChartTop');if(window.Chart){if(c){if(radar1)radar1.destroy();radar1=new Chart(c.getContext('2d'),radarConfig(labels,a))}if(ct){if(radar2)radar2.destroy();radar2=new Chart(ct.getContext('2d'),radarConfig(labels,a))}}}
+  function restoreSignature(data){var c=q('#signatureCanvas');if(!c)return;var ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);signatureDirty=false;if(data){var im=new Image();im.onload=function(){ctx.drawImage(im,0,0,c.width,c.height)};im.src=data}q('#signatureStatus').textContent=data?'امضا ثبت شده':'بدون امضا';}
+  function setupSignature(){var c=q('#signatureCanvas');if(!c)return;var ctx=c.getContext('2d'),down=false,last=null;function pos(e){var r=c.getBoundingClientRect(),p=e.touches&&e.touches[0]?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height}}function start(e){e.preventDefault();down=true;last=pos(e)}function move(e){if(!down)return;e.preventDefault();var p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#1f2937';ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();last=p;signatureDirty=true;q('#signatureStatus').textContent='امضا در حال ثبت'}function end(){if(down){down=false;q('#signatureStatus').textContent='امضا آماده ذخیره است';autoSave()}}c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);document.addEventListener('mouseup',end);c.addEventListener('touchstart',start,{passive:false});c.addEventListener('touchmove',move,{passive:false});c.addEventListener('touchend',end);q('#clearSignatureBtn').onclick=function(){restoreSignature('');autoSave()}}
+  function exportJSON(){var data={app:'MG Evaluation',version:3,exportedAt:nowLocal(),records:records()};var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});downloadBlob(blob,'ارزیابی_کارکنان_پشتیبان.json');}
+  function importJSON(file){var rd=new FileReader();rd.onload=function(){try{var x=JSON.parse(rd.result),incoming=x.records||x;var o=records();for(var k in incoming)if(incoming.hasOwnProperty(k)){var d=incoming[k];var code=d.personnel_code||k;if(code)o[code]=d}putRecords(o);updateRecordsTable();loadFormList();toast('ورود JSON با موفقیت انجام شد','success')}catch(e){toast('فایل JSON معتبر نیست','error')}};rd.readAsText(file,'UTF-8')}
+  function downloadBlob(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(a.href)},100)}
+  function exportExcel(){var o=records(),keys=[],k;for(k in o)if(o.hasOwnProperty(k))keys.push(k);if(!keys.length){toast('رکوردی برای خروجی وجود ندارد','warning');return}var headers=['نام مدرسه','پایه','نام آموزگار','کد پرسنلی','بازدیدکننده','تاریخ میلادی','تاریخ شمسی','ساعت ثبت','مدت حضور','معدل از ۴','معدل از ۱۰۰','وضعیت'];qa('.score').forEach(function(s,i){headers.push('امتیاز '+(i+1));headers.push('یادداشت '+(i+1));headers.push('فعال '+(i+1))});headers.push('نقاط قوت','چالش‌ها','پیشنهادات','تحلیل کلی','ارزیابی نهایی');var rows=[headers];keys.forEach(function(x){var d=o[x],row=[d.school,d.grade,d.teacher,d.personnel_code,d.inspector,d.date,d.persian_date,d.savedAt,d.duration,d.overall,d.percent,getStatus(d.overall||0)[1]];(d.scores||[]).forEach(function(v,i){row.push(v);row.push((d.comments||[])[i]||'');row.push(d.active&&d.active[i]===false?'خیر':'بله')});row.push(d.teacher_strengths,d.teacher_challenges,d.teacher_suggestions,d.summary,d.final_evaluation);rows.push(row)});function cell(v){return '<Cell><Data ss:Type="String">'+esc(v).replace(/&amp;/g,'&amp;')+'</Data></Cell>'}var xml='<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="ارزیابی"><Table>'+rows.map(function(r){return '<Row>'+r.map(cell).join('')+'</Row>'}).join('')+'</Table></Worksheet></Workbook>';downloadBlob(new Blob([xml],{type:'application/vnd.ms-excel'}),'ارزیابی_کارکنان.xls');}
+  function printMode(mode){colorMode=mode;document.body.classList.toggle('mg-print-bw',mode==='bw');window.print()}
+  // Compatibility layer: the original buttons now use the personnel-code record store.
+  window.loadFormList=function(){updateRecordsTable();};
+  window.filterForms=function(){
+    var term=(q('#search_form')?q('#search_form').value:'').toLowerCase();
+    var o=records(), sel=q('#load_form_select');
+    if(!sel)return; sel.innerHTML='<option value="">-- انتخاب فرد ثبت‌شده --</option>';
+    for(var k in o) if(o.hasOwnProperty(k)){
+      var d=o[k], hay=((d.teacher||'')+' '+(d.personnel_code||'')+' '+(d.persian_date||'')+' '+(d.school||'')).toLowerCase();
+      if(!term || hay.indexOf(term)>=0){var op=document.createElement('option');op.value=k;op.textContent=(d.teacher||'بدون نام')+' - '+(d.personnel_code||k);sel.appendChild(op);}
+    }
+  };
+  window.loadForm=function(){var c=q('#load_form_select')?q('#load_form_select').value:'';var o=records();if(c&&o[c]){apply(o[c]);toast('فرم با موفقیت بارگذاری شد','success');}else toast('یک فرد ثبت‌شده را انتخاب کنید','warning');};
+  window.clearForm=function(){
+    var self=this;
+    if(window.Swal){Swal.fire({title:'پاک کردن فرم جدید؟',text:'اطلاعات فرم جاری پاک می‌شود؛ سوابق ثبت‌شده حذف نمی‌شوند.',icon:'warning',showCancelButton:true,confirmButtonText:'بله، پاک کن',cancelButtonText:'انصراف'}).then(function(r){if(r.isConfirmed)newForm();});}
+    else newForm();
+  };
+  window.previewForm=function(){var d=collect();var w=window.open('','_blank');if(!w){toast('پنجره پیش‌نمایش توسط مرورگر مسدود شده است','error');return;}w.document.open();w.document.write(generatePrintContent(d));w.document.close();};
+  window.printForm=function(){var d=collect(),w=window.open('','_blank');if(!w){toast('پنجره چاپ توسط مرورگر مسدود شده است','error');return;}w.document.open();w.document.write(generatePrintContent(d));w.document.close();setTimeout(function(){w.print();},500);};
+  window.exportToCSV=function(){exportExcel();};
+
+  function bind(){
+    setupIndicators();setupSignature();updateRecordsTable();calculate();
+    try{var draft=localStorage.getItem(DRAFT);if(draft && !q("#personnel_code").value)apply(JSON.parse(draft));}catch(e){}
+    q('#newFormBtn').onclick=newForm;q('#saveNowBtn').onclick=saveFinal;q('#editSavedBtn').onclick=function(){var o=records(),c=q('#load_form_select').value;if(c&&o[c])apply(o[c]);else if(editingCode&&o[editingCode])apply(o[editingCode]);else toast('یک فرم ثبت‌شده را انتخاب کنید','warning')};q('#exportJsonBtn').onclick=exportJSON;q('#importJsonInput').onchange=function(){if(this.files[0])importJSON(this.files[0]);this.value=''};q('#exportExcelBtn').onclick=exportExcel;q('#printColorBtn').onclick=function(){printMode('color')};q('#printBWBtn').onclick=function(){printMode('bw')};
+    document.addEventListener('input',function(e){if(e.target.matches('input,textarea,select'))autoSave()});document.addEventListener('change',function(e){if(e.target.matches('input,textarea,select')){calculate();autoSave()}});
+    if(q('#date'))q('#date').addEventListener('change',function(){try{q('#persian_date').value=moment(this.value).locale('fa').format('YYYY/MM/DD')}catch(e){}calculate();autoSave()});
+    var oldSave=window.saveForm;window.saveForm=function(){saveFinal()};
+    /* replace legacy saved-list selector with personnel-key selector */
+    if(q('#load_form_select'))q('#load_form_select').addEventListener('change',function(){var o=records();if(o[this.value])apply(o[this.value])});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else setTimeout(bind,0);
+  window.mgSaveNow=saveFinal;window.mgNewForm=newForm;
+})();
+</script>
+</body>
+</html>
